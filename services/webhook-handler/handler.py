@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from fastapi import status
 from mangum import Mangum
 
-from models import DiscriminatedPayload as Payload
+from common.models import DiscriminatedPayload as Payload
 
 
 def setup_logging() -> logging.Logger:

@@ -55,7 +55,7 @@ def _import_handler_with_dummy(monkeypatch):
     # Ensure the models secret lookup returns expected test secrets by default.
     # Import models and monkeypatch its lookup so tests don't depend on module
     # constants and so future secret-manager changes are easy to test.
-    import models
+    from common import models
 
     default_secrets = {
         "lead_ingest": "super-secret-123",
