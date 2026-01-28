@@ -15,6 +15,8 @@ class WebhookHandler(pulumi.ComponentResource):
         if code_bucket is None:
             raise ValueError("Cannot deploy lambda without specifying bucket")
 
+        self.junk = []
+
         self.code_bucket = code_bucket
 
         self.child_opts = pulumi.ResourceOptions(parent=self)
@@ -55,6 +57,8 @@ class WebhookHandler(pulumi.ComponentResource):
             )
 
             shutil.make_archive(bundle_name, "zip", build)
+
+            self.junk.append(bundle_file)
 
         code_blob = aws.s3.BucketObject(
             f"{name}-zip",

@@ -1,4 +1,7 @@
-fastapi
-mangum
 boto3
 boto3-stubs
+fastapi
+httpx
+mangum
+pydantic
+pytest

@@ -5,13 +5,14 @@ import sys
 from typing import Any
 from typing import Dict
 
-
 import boto3
 import botocore.exceptions
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
 from mangum import Mangum
+
+from models import DiscriminatedPayload as Payload
 
 
 def setup_logging() -> logging.Logger:
@@ -33,7 +34,17 @@ app = FastAPI(title="CRM Ingestion Webhook")
 
 logger = setup_logging()
 
-sqs = boto3.client("sqs")
+_sqs_client = None
+
+
+def get_sqs_client():
+    """Lazily create and return a boto3 SQS client."""
+    global _sqs_client
+    if _sqs_client is None:
+        _sqs_client = boto3.client("sqs")
+    return _sqs_client
+
+
 QUEUE_URL = os.environ.get("QUEUE_URL")
 
 
@@ -44,7 +55,7 @@ async def root() -> Dict[str, str]:
 
 
 @app.post("/webhook", status_code=status.HTTP_202_ACCEPTED)
-def receive_webhook(data: Dict[str, Any]) -> Dict[str, str]:
+def receive_webhook(data: Payload) -> Dict[str, str]:
     """Accepts a payload and send to SQS Queue
     Raises:
         HTTPException if no data received
@@ -59,7 +70,9 @@ def receive_webhook(data: Dict[str, Any]) -> Dict[str, str]:
         )
 
     try:
-        sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(data))
+        get_sqs_client().send_message(
+            QueueUrl=QUEUE_URL, MessageBody=json.dumps(data.model_dump())
+        )
         return {"status": "accepted"}
     except botocore.exceptions.ClientError as error:
         logger.exception("Failed to send to SQS")
