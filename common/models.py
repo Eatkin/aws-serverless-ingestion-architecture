@@ -4,8 +4,7 @@ from typing import Union
 
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic import field_validator
-from pydantic import ValidationInfo
+from pydantic import model_validator
 
 
 SUPER_SECRET_PASSWORDS = {
@@ -24,37 +23,41 @@ def get_secret_for_webhook(webhook_id: str) -> str | None:
     return SUPER_SECRET_PASSWORDS.get(webhook_id)
 
 
-class WebhookBaseModel(BaseModel):
+class StorageBaseModel(BaseModel):
     webhook_id: str = Field(..., description="Unique ID for the webhook type")
+
+
+class WebhookBaseModel(BaseModel):
     secret_key: str = Field(..., description="The poor man's API key")
 
-    @field_validator("secret_key")
-    @classmethod
-    def validate_signature(cls, v: str, info: ValidationInfo):
-        # Access previously validated fields via info.data
-        webhook_id = info.data.get("webhook_id")
+    @model_validator(mode="after")
+    def validate_signature(self) -> "WebhookBaseModel":
+        webhook_id = getattr(self, "webhook_id", None)
+        secret_key = self.secret_key
 
         if not webhook_id:
-            raise ValueError("webhook_id must be provided before secret_key")
+            raise ValueError("webhook_id is missing from the payload")
 
-        # Use a lookup function so tests or future secret manager
-        # integrations can override how secrets are retrieved.
         expected_secret = get_secret_for_webhook(webhook_id)
 
-        if v != expected_secret:
+        if secret_key != expected_secret:
             raise ValueError(f"Invalid signature for webhook type: {webhook_id}")
 
-        return v
+        return self
 
 
-class LeadPayload(WebhookBaseModel):
+class LeadStorage(StorageBaseModel):
     webhook_id: Literal["lead_ingest"]  # type: ignore[override]
     lead_id: str
     email: str
     status: str = "new"
 
 
-class BillingPayload(WebhookBaseModel):
+class LeadIngest(LeadStorage, WebhookBaseModel):
+    pass
+
+
+class BillingStorage(StorageBaseModel):
     webhook_id: Literal["billing_update"]  # type: ignore[override]
     customer_id: str
     amount: float
@@ -62,7 +65,11 @@ class BillingPayload(WebhookBaseModel):
     transaction_id: str
 
 
-class UserSignupPayload(WebhookBaseModel):
+class BillingIngest(BillingStorage, WebhookBaseModel):
+    pass
+
+
+class UserSignupStorage(StorageBaseModel):
     webhook_id: Literal["user_signup"]  # type: ignore[override]
     username: str
     email: str
@@ -70,7 +77,16 @@ class UserSignupPayload(WebhookBaseModel):
     is_premium: bool = False
 
 
-DiscriminatedPayload = Annotated[
-    Union[LeadPayload, BillingPayload, UserSignupPayload],
+class UserSignupIngest(UserSignupStorage, WebhookBaseModel):
+    pass
+
+
+DiscriminatedIngestionPayload = Annotated[
+    Union[LeadIngest, BillingIngest, UserSignupIngest],
+    Field(discriminator="webhook_id"),
+]
+
+DiscriminatedStoragePayload = Annotated[
+    Union[LeadStorage, BillingStorage, UserSignupStorage],
     Field(discriminator="webhook_id"),
 ]

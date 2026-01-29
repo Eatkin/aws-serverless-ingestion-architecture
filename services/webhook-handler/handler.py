@@ -12,7 +12,14 @@ from fastapi import HTTPException
 from fastapi import status
 from mangum import Mangum
 
-from common.models import DiscriminatedPayload as Payload
+from common.models import DiscriminatedIngestionPayload as IngestionPayload
+from common.models import DiscriminatedStoragePayload as StoragePayload
+from common.models import BillingIngest
+from common.models import BillingStorage
+from common.models import LeadIngest
+from common.models import LeadStorage
+from common.models import UserSignupIngest
+from common.models import UserSignupStorage
 
 
 def setup_logging() -> logging.Logger:
@@ -30,6 +37,8 @@ def setup_logging() -> logging.Logger:
     return logger
 
 
+QUEUE_URL = os.environ.get("QUEUE_URL")
+
 app = FastAPI(title="CRM Ingestion Webhook")
 
 logger = setup_logging()
@@ -45,7 +54,15 @@ def get_sqs_client():
     return _sqs_client
 
 
-QUEUE_URL = os.environ.get("QUEUE_URL")
+def transmute_to_storage(ingest_data: IngestionPayload) -> StoragePayload:
+    """Converts any Ingest model to its corresponding Storage model, stripping secrets."""
+    if isinstance(ingest_data, LeadIngest):
+        return LeadStorage.model_validate(ingest_data, from_attributes=True)
+    if isinstance(ingest_data, BillingIngest):
+        return BillingStorage.model_validate(ingest_data, from_attributes=True)
+    if isinstance(ingest_data, UserSignupIngest):
+        return UserSignupStorage.model_validate(ingest_data, from_attributes=True)
+    raise ValueError("Unknown payload type")
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
@@ -55,7 +72,7 @@ async def root() -> Dict[str, str]:
 
 
 @app.post("/webhook", status_code=status.HTTP_202_ACCEPTED)
-def receive_webhook(data: Payload) -> Dict[str, str]:
+def receive_webhook(data: IngestionPayload) -> Dict[str, str]:
     """Accepts a payload and send to SQS Queue
     Raises:
         HTTPException if no data received
@@ -70,8 +87,9 @@ def receive_webhook(data: Payload) -> Dict[str, str]:
         )
 
     try:
+        storage_data = transmute_to_storage(data)
         get_sqs_client().send_message(
-            QueueUrl=QUEUE_URL, MessageBody=json.dumps(data.model_dump())
+            QueueUrl=QUEUE_URL, MessageBody=json.dumps(storage_data.model_dump())
         )
         return {"status": "accepted"}
     except botocore.exceptions.ClientError as error:
