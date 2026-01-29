@@ -66,3 +66,48 @@ def add_sqs_consumer_policy(name, role, queue_arn, opts) -> aws.iam.RolePolicy:
     return aws.iam.RolePolicy(
         f"{name}-sqs-consumer-policy", role=role.id, policy=policy_doc.json, opts=opts
     )
+
+
+def add_db_read_policy(name, role, db_arn, opts) -> aws.iam.RolePolicy:
+    """Grants read-only access: Get, Query, and Scan."""
+    policy_doc = aws.iam.get_policy_document(
+        statements=[
+            {
+                "actions": [
+                    "dynamodb:GetItem",
+                    "dynamodb:BatchGetItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:DescribeTable",
+                ],
+                "resources": [db_arn],
+            }
+        ]
+    )
+
+    return aws.iam.RolePolicy(
+        f"{name}-db-read-policy", role=role.id, policy=policy_doc.json, opts=opts
+    )
+
+
+def add_db_write_policy(name, role, db_arn, opts) -> aws.iam.RolePolicy:
+    """Grants full CRUD: Put, Update, and Delete."""
+    policy_doc = aws.iam.get_policy_document(
+        statements=[
+            {
+                "actions": [
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:BatchWriteItem",
+                    "dynamodb:GetItem",
+                    "dynamodb:Query",
+                ],
+                "resources": [db_arn],
+            }
+        ]
+    )
+
+    return aws.iam.RolePolicy(
+        f"{name}-db-write-policy", role=role.id, policy=policy_doc.json, opts=opts
+    )
