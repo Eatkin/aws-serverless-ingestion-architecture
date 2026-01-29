@@ -111,3 +111,25 @@ def add_db_write_policy(name, role, db_arn, opts) -> aws.iam.RolePolicy:
     return aws.iam.RolePolicy(
         f"{name}-db-write-policy", role=role.id, policy=policy_doc.json, opts=opts
     )
+
+
+def add_secrets_access_policy(
+    name,
+    role,
+    secrets_arn,
+    opts,
+) -> aws.iam.RolePolicy:
+    """Grants the Lambda permission to read specific secrets."""
+    policy_doc = aws.iam.get_policy_document(
+        statements=[
+            {
+                "actions": ["secretsmanager:GetSecretValue"],
+                "resources": [secrets_arn],
+                "effect": "Allow",
+            }
+        ],
+    )
+
+    return aws.iam.RolePolicy(
+        f"{name}-secrets-read-policy", role=role.id, policy=policy_doc.json, opts=opts
+    )

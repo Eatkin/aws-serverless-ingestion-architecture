@@ -30,6 +30,8 @@ infra["webhook_handler"] = WebhookHandler(
 pulumi.export("webhook_endpoint", infra["webhook_handler"].lambda_url.function_url)
 pulumi.export("webhook_id", infra["webhook_handler"].webhook_lambda.id)
 pulumi.export("webhook_arn", infra["webhook_handler"].webhook_lambda.arn)
+# pulumi.export("secrets_arn", webhook_secrets_container.arn)
+
 
 # Database for storage
 infra["database"] = Database("database")

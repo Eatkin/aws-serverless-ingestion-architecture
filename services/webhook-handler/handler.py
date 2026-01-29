@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import sys
-from typing import Any
 from typing import Dict
 
 import boto3
@@ -20,6 +19,21 @@ from common.models import LeadIngest
 from common.models import LeadStorage
 from common.models import UserSignupIngest
 from common.models import UserSignupStorage
+
+SECRETS_CACHE: Dict[str, str] = {}
+
+
+def get_secret_for_webhook(webhook_id: str) -> str | None:
+    global SECRETS_CACHE
+
+    if not SECRETS_CACHE:
+        client = boto3.client("secretsmanager")
+        secret_id = os.environ["SECRETS_ARN"]
+
+        response = client.get_secret_value(SecretId=secret_id)
+        SECRETS_CACHE = json.loads(response["SecretString"])
+
+    return SECRETS_CACHE.get(webhook_id)
 
 
 def setup_logging() -> logging.Logger:
