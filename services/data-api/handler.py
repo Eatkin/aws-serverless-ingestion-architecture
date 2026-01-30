@@ -25,7 +25,7 @@ table = None
 def get_table():
     global table
     if table is None:
-        table = dynamodb.Table(TABLE_NAME)
+        table = get_db().Table(TABLE_NAME)
     return table
 
 @app.get("/leads")
