@@ -7,6 +7,7 @@ import pulumi
 import pulumi_aws as aws
 
 from buckets.code_bucket import CodeBucket
+from data_api import DataAPI
 from database import Database
 from ingestion_handler import IngestionHandler
 from ingestion_queue import IngestionQueue
@@ -46,6 +47,16 @@ infra["ingestion_handler"] = IngestionHandler(
 )
 pulumi.export("ingester_id", infra["ingestion_handler"].ingestion_lambda.id)
 pulumi.export("ingester_arn", infra["ingestion_handler"].ingestion_lambda.arn)
+
+# Create the API
+infra["data_api"] = DataAPI(
+    "crm-data-api",
+    code_bucket=infra["code_bucket"].code_bucket,
+    database=infra["database"].db,
+)
+pulumi.export("data_api_url", infra["data_api"].url.function_url)
+pulumi.export("data_api_id", infra["data_api"].data_api_lambda.id)
+pulumi.export("data_api_arn", infra["data_api"].data_api_lambda.arn)
 
 
 @atexit.register

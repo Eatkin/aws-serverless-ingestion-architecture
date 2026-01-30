@@ -1,6 +1,5 @@
-encryptionsalt: v1:Ev8HlrOpAwc=:v1:r7r9pvmS2Fu6Mfyr:DiGDC+rep5fSFet3FD5SQpliCdoNfQ==
+encryptionsalt: v1:iCqt7lZY6t0=:v1:4KAodtp/IvmlQpcB:4tpk1iwW10emF0ASHs/IWzlD3ZWnlQ==
 config:
-  aws:region: us-east-1
   aws:endpoints:
     - accessanalyzer: http://localhost:4566
     - account: http://localhost:4566
@@ -310,8 +309,8 @@ config:
     - workspacesweb: http://localhost:4566
     - xray: http://localhost:4566
   aws:accessKey: test
+  aws:region: us-east-1
   aws:s3UsePathStyle: "true"
   aws:secretKey: test
   aws:skipCredentialsValidation: "true"
   aws:skipRequestingAccountId: "true"
-  iac:strategy: overwrite
