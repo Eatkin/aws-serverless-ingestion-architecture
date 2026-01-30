@@ -47,7 +47,7 @@ pulumilocal up --yes
 ### 3. Test the pipeline
 
 ```bash
-curl -X POST "$(pulumilocal stack output webhook_endpoint)" \
+curl -X POST "$(pulumilocal stack output webhook_endpoint)/webhook" \
      -H "Content-Type: application/json" \
      -d '{
         "webhook_id": "lead_ingest",
@@ -56,6 +56,12 @@ curl -X POST "$(pulumilocal stack output webhook_endpoint)" \
         "email": "zote@themighty.com",
         "status": "glorious"
      }'
+```
+
+NOTE: If you get a message about a malformed url you may have to export the following environment variable:
+
+```bash
+export CONFIG_STRATEGY=overwrite
 ```
 
 Check logs:
