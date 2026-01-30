@@ -1,9 +1,15 @@
 #!/bin/bash
 
 echo "Setting up service venvs"
-SERVICES=("services/webhook-handler" "services/processor")
+for SERVICE in services/*/; do
+    # Remove trailing slash
+    SERVICE=${SERVICE%/}
 
-for SERVICE in "${SERVICES[@]}"; do
+    # Only continue if requirements.txt exists
+    if [ ! -f "$SERVICE/requirements.txt" ]; then
+        echo "Skipping $SERVICE (no requirements.txt)"
+        continue
+    fi
     echo "Setting up $SERVICE..."
     VENV="$SERVICE/venv"
     if [ -d "$VENV" ]; then
@@ -12,7 +18,7 @@ for SERVICE in "${SERVICES[@]}"; do
     fi
 
     python3 -m venv "$VENV"
-    source "$SERVICE/venv/activate"
+    source "$SERVICE/venv/bin/activate"
     pip install --upgrade pip
     
     echo "Installing requirements"
