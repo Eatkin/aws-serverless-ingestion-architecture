@@ -72,6 +72,12 @@ awslocal logs tail /aws/lambda/crm-webhook-function --follow
 awslocal dynamodb scan --table-name data-table
 ```
 
+You will now be able to retrieve the record you just sent with the following:
+
+```bash
+curl -i "$(pulumilocal stack output data_api_url)/leads?email=zote@themighty.com"
+```
+
 ## Architecture
 
 **Ingest Layer:** FastAPI webhook handler with Pydantic validation. Intended to receive webhooks from external service.
