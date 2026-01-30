@@ -37,6 +37,8 @@ def bundle_directory(source: str, bundle_name: str, common: str = "../common") -
                     "manylinux2014_x86_64",
                     "--only-binary=:all:",
                     "--upgrade",
+                    "--no-cache-dir",
+                    "--python-version", "3.12"
                 ],
                 check=True,
             )
