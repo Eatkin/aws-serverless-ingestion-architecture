@@ -10,8 +10,12 @@ Designed to be run on localstack free tier.
 
 - Docker (for LocalStack)
 - LocalStack
+- Pulumi
 - Pulumilocal (wrapper for Pulumi)
 - direnv
+- aws cli
+- awslocal
+- awscurl
 
 ### 1. Set up secrets
 
@@ -68,11 +72,28 @@ Check logs:
 
 ```bash
 awslocal logs tail /aws/lambda/crm-webhook-function --follow
+```
 
+Check database entries:
+
+```bash
 awslocal dynamodb scan --table-name data-table
 ```
 
-You will now be able to retrieve the record you just sent with the following:
+You should have a user named zote_the_mighty with credentials allowing invocation of the service via awscurl, allowing you to retrieve the record you just added:
+
+```bash
+export AWS_ACCESS_KEY_ID="$(pulumilocal stack output zote_access_key)"
+export AWS_SECRET_ACCESS_KEY="$(pulumilocal stack output zote_secret_key --show-secrets)"
+export AWS_REGION=eu-north-1
+
+awscurl \
+  --service lambda \
+  --region eu-north-1 \
+  "$(pulumilocal stack output data_api_url)/leads?email=zote@themighty.com"
+```
+
+NOTE: LocalStack does not currently validate SigV4 request signatures for Lambda Function URLs. As a result, AWS_IAM authorization on Function URLs is not enforced locally, and unsigned requests may succeed. The following may also work:
 
 ```bash
 curl -i "$(pulumilocal stack output data_api_url)/leads?email=zote@themighty.com"

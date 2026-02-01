@@ -133,3 +133,13 @@ def add_secrets_access_policy(
     return aws.iam.RolePolicy(
         f"{name}-secrets-read-policy", role=role.id, policy=policy_doc.json, opts=opts
     )
+
+def grant_user_invoke_permission(name, lambda_function, user, opts):
+    return aws.lambda_.Permission(
+        f"{name}-{user.literal_name}-allow-iam-url-invoke",
+        action="lambda:InvokeFunctionUrl",
+        function=lambda_function.name,
+        principal=user.user.arn,
+        function_url_auth_type="AWS_IAM",
+        opts=opts
+    )

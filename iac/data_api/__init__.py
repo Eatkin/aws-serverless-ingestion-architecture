@@ -1,5 +1,3 @@
-import json
-import os
 from typing import List
 
 import pulumi
@@ -7,21 +5,25 @@ import pulumi_aws as aws
 
 from iam.lambda_function import add_db_read_policy
 from iam.lambda_function import create_lambda_role
+from iam.lambda_function import grant_user_invoke_permission
 from utils import bundle_directory
 
 
 class DataAPI(pulumi.ComponentResource):
     def __init__(
-        self, name, opts=None, code_bucket=None, database=None
+        self, name, opts=None, code_bucket=None, database=None, invoke_users=None,
     ) -> None:
-        super().__init__("crm-app:ingestion:IngestionHandler", name, {}, opts)
+        super().__init__("crm-app:egress:DataAPI", name, {}, opts)
 
-        requirements = [code_bucket, database]
+        requirements = [code_bucket, database, invoke_users]
         for r in requirements:
             if r is None:
                 raise ValueError(
                     "Missing requirement: code bucket, ingestion queue or database"
                 )
+
+        if not isinstance(invoke_users, list):
+            raise TypeError("Parameter invoke_users must be a list")
 
         self.junk: List[str] = []
 
@@ -38,6 +40,12 @@ class DataAPI(pulumi.ComponentResource):
 
         self.data_api_lambda = self._create_lambda(name)
         self.url = self._create_url(name)
+
+        # Allow users to invoke
+        self.invoke_permissions = []
+        for user in invoke_users:
+            p = grant_user_invoke_permission(name, self.data_api_lambda, user, opts=self.child_opts)
+            self.invoke_permissions.append(p)
 
         self.register_outputs({"data_api_url": self.url})
 
@@ -72,7 +80,7 @@ class DataAPI(pulumi.ComponentResource):
                 variables={
                     "TABLE_NAME": self.db.name
                 }
-            ),
+            )
         )
 
         return l
@@ -80,6 +88,6 @@ class DataAPI(pulumi.ComponentResource):
     def _create_url(self, name) -> aws.lambda_.FunctionUrl:
         egress_url = aws.lambda_.FunctionUrl(f"{name}-url",
             function_name=self.data_api_lambda.name,
-            authorization_type="NONE", # TODO: Set IAM auth
+            authorization_type="AWS_IAM",
         )
         return egress_url
